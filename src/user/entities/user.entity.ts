@@ -1,13 +1,24 @@
-import { Check, Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  RelationId,
+} from 'typeorm';
+import { Exclude, Expose, Transform } from 'class-transformer';
 import { UserRoleEnum } from './user.role.enum';
-@Index(['email'], { unique: true , where: `"email" IS NOT NULL` })
-@Index(['username'], { unique: true , where: `"username" IS NOT NULL` })
-@Index(['phoneCode', 'phoneNumber'], {
+import { AuthProvider } from '../../auth/entities/auth.entity';
+import { AuthProviderTypeEnum } from '../../auth/entities/enum/authprovider.type.enum';
+@Index(['email'], { unique: true, where: `"email" IS NOT NULL` })
+@Index(['username'], { unique: true, where: `"username" IS NOT NULL` })
+@Index(['phone'], {
   unique: true,
-  where: `"phoneCode" IS NOT NULL AND "phoneNumber" IS NOT NULL`,
+  where: `"phone" IS NOT NULL`,
 })
 @Check(
-  `("phoneCode" IS NOT NULL AND "phoneNumber" IS NOT NULL) OR ("phoneCode" IS NULL AND "phoneNumber" IS NULL)`,
+  `("email" IS NOT NULL AND "username" IS NULL) OR ("email" IS NULL AND "username" IS NOT NULL)`,
 )
 @Entity()
 export class User {
@@ -19,10 +30,26 @@ export class User {
   email: string;
   @Column({ nullable: true })
   username: string;
-  @Column({ nullable: true, type: 'varchar', length: 4 })
-  phoneCode?: string;
-  @Column({ nullable: true, type: 'varchar', length: 9 })
-  phoneNumber?: string;
+  @Column({ nullable: true })
+  phone?: string;
   @Column({ type: 'enum', enum: Object.values(UserRoleEnum) })
   type: string;
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  isEmailVerified: boolean;
+
+  @OneToMany(() => AuthProvider, (auth) => auth.user, { eager: true })
+  @Transform((v) => {
+    return v.value.map((e: AuthProvider) => e.type);
+  })
+  authProviders: AuthProvider[];
+
+  get hasPassword(): boolean {
+    return (
+      this.authProviders.filter((e) => e.type == AuthProviderTypeEnum.password)
+        .length > 0
+    );
+  };
 }

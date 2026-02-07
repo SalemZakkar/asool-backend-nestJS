@@ -4,9 +4,10 @@ import {
   MaxLength,
   MinLength,
   IsPhoneNumber,
+  IsOptional
 } from 'class-validator';
 
-export class CreateAuthDto {
+export class SignUpDto {
   @IsEmail()
   email: string;
   @IsString()
@@ -14,7 +15,12 @@ export class CreateAuthDto {
   @MaxLength(32)
   password: string;
   @IsString()
+  @MinLength(8)
+  @MaxLength(32)
+  confirmPassword: string;
+  @IsString()
   name: string;
   @IsPhoneNumber()
-  phoneNumber: string;
+  @IsOptional()
+  phone: string;
 }

@@ -1,22 +1,8 @@
 import {
-  IsEmail,
   IsString,
-  MaxLength,
-  MinLength,
-  IsPhoneNumber,
-  IsOptional
 } from 'class-validator';
 
-export class SignUpDto {
-  @IsEmail()
-  email: string;
+export class FirebaseLoginDto {
   @IsString()
-  @MinLength(8)
-  @MaxLength(32)
-  password: string;
-  @IsString()
-  name: string;
-  @IsPhoneNumber()
-  @IsOptional()
-  phone: string;
+  token: string;
 }

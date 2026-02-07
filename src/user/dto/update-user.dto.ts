@@ -9,28 +9,16 @@ import {
   Validate,
 } from 'class-validator';
 import { UserRoleEnum } from '../entities/user.role.enum';
-import { XorValidator } from 'core';
+import { OrValidator, XorValidator } from 'core';
 
-export class CreateUserDto {
+export class UpdateUserDto {
   @IsString()
+  @IsOptional()
   name: string;
-  @IsString()
-  @IsOptional()
-  username?: string;
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-  @IsString()
-  @MinLength(8)
-  @MaxLength(32)
-  password: string;
   @IsPhoneNumber()
   @IsOptional()
   phone?: string;
-  @IsString()
   @IsEnum(UserRoleEnum)
+  @IsOptional()
   type: string;
-
-  @Validate(XorValidator, ['email', 'username'])
-  x: any;
 }

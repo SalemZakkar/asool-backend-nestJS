@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Google Login Test</title>
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDbvt8UxrRHb8ojPp8DOljdnyYvrWkKDUk",
+            authDomain: "asool-b2ec0.firebaseapp.com",
+            projectId: "asool-b2ec0",
+            storageBucket: "asool-b2ec0.firebasestorage.app",
+            messagingSenderId: "876804941235",
+            appId: "1:876804941235:web:d4ed40ab9bd6b7770797c6",
+            measurementId: "G-DK2ZL8XMJB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        async function login() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                const token = await user.getIdToken();
+
+                console.log("User:", user);
+                console.log("ID Token:", token);
+
+                alert("Login successful! Check console for ID token.");
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        window.login = login;
+    </script>
+</head>
+<body>
+<h1>Firebase Google Login Test</h1>
+<button onclick="login()">Login with Google</button>
+</body>
+</html>
