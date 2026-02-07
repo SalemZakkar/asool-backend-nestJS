@@ -38,14 +38,14 @@ export class Otp {
   static SEPS = [5, 10, 20, 60, 24 * 60];
   static MAX_ATTEMPTS = 5;
 
-  nextDate() {
+  get nextDate() {
     let res = new Date(this.date);
     res.setMinutes(res.getMinutes() + Otp.SEPS[this.attempts - 1]);
     return res;
   }
 
-  canResend() {
-    let next = this.nextDate();
+  get canResend() {
+    let next = this.nextDate;
     let now = new Date();
     return now >= next;
   }
