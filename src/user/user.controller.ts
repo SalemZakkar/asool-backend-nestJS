@@ -13,42 +13,40 @@ import {
   Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { UserCreateDto } from './dto/user-create.dto';
 import { BaseResponse, PasswordMissmatchException } from 'core';
 import { Request } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 import { User } from './entities/user.entity';
 import {
+  UserChangePasswordDto,
   UserForgotPasswordDto,
   UserResetPasswordDto,
 } from './dto/user-password.dto';
 import { UserVerifyDto } from './dto/user-verify.dto';
-import { UserChangePasswordDto } from './dto/userChangePasswordDto';
-import { UpdateMineDto } from './dto/update-mine.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { FirebaseLoginDto } from '../auth/dto/firebase-login.dto';
+import { UserUpdateDto, UserUpdateMineDto } from './dto/user-update-mine.dto';
+import { AuthTokenDto } from '../auth';
+import { JwtGuard } from '../auth';
 
 @Controller('user')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  //get All  update By Id
+  //get All
 
   @Get('/mine')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   async getMine(@Req() req: Request) {
     return new BaseResponse({ data: req.user });
   }
 
   @Patch('/mine')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   async updateMine(
     @Req() req: Request,
     @Body()
-    data: UpdateMineDto,
+    data: UserUpdateMineDto,
   ) {
-    console.log(data);
     let res = await this.userService.findOneAndUpdate(
       data,
       (req.user as User).id,
@@ -57,7 +55,7 @@ export class UserController {
   }
 
   @Post('/mine/changePassword')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   async changePassword(
     @Body() params: UserChangePasswordDto,
     @Req() req: Request,
@@ -69,7 +67,7 @@ export class UserController {
     return new BaseResponse({});
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @Post('/mine/sendEmailOtp')
   async requestEmailVerification(@Req() req: Request) {
     return await this.userService.sendEmailOtp({
@@ -77,7 +75,7 @@ export class UserController {
     });
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @Post('/mine/verifyEmail')
   async verifyEmail(@Body() params: UserVerifyDto, @Req() req: Request) {
     let res = await this.userService.verifyEmail(
@@ -103,21 +101,21 @@ export class UserController {
     return new BaseResponse({ message: 'Password Reset Success' });
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @Post('/mine/google')
-  async googleLink(@Body() data: FirebaseLoginDto, @Req() req: Request) {
+  async googleLink(@Body() data: AuthTokenDto, @Req() req: Request) {
     await this.userService.linkGoogleAccount((req.user as User).id, data.token);
     return new BaseResponse({ message: 'Linked Google Account' });
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @Delete('/mine/google')
   async googleUnLink(@Req() req: Request) {
     await this.userService.unlinkGoogleAccount((req.user as User).id);
     return new BaseResponse({ message: 'Un Linked Google Account' });
   }
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(@Body() createUserDto: UserCreateDto) {
     return new BaseResponse({
       data: await this.userService.create(
         {
@@ -135,7 +133,6 @@ export class UserController {
 
   @Get()
   async getByCriteria(@Query() req: any) {
-    console.log(req);
     return new BaseResponse();
   }
 
@@ -146,7 +143,7 @@ export class UserController {
   }
 
   @Patch('/:id')
-  async updateById(@Param('id') id: string, @Body() data: UpdateUserDto) {
+  async updateById(@Param('id') id: string, @Body() data: UserUpdateDto) {
     let res = await this.userService.findOneAndUpdate(data, id);
     return new BaseResponse({ data: res });
   }

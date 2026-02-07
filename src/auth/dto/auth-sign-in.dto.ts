@@ -7,7 +7,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-export class SignInDto {
+export class AuthSignInDto {
   @ValidateIf((o) => !o.username) // run email validation if username not present
   @IsString()
   @IsEmail()

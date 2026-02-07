@@ -7,7 +7,7 @@ import {
   IsOptional
 } from 'class-validator';
 
-export class SignUpDto {
+export class AuthSignUpDto {
   @IsEmail()
   email: string;
   @IsString()

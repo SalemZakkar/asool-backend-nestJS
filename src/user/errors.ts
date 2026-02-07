@@ -31,11 +31,17 @@ export class UserIsNotActivatedException extends HttpException {
   }
 }
 
+export class UserAlreadyGoogleLinkedException extends HttpException {
+  constructor() {
+    super('User Already Have Google Linked', 400);
+  }
+}
+
 ErrorsRecord.addErrors('user', [
   new UserAlreadyExistsException(),
   new UserNotVerifiedException(),
   new UserAlreadyVerifiedException(),
   new UserActionNeedsPassword(),
   new UserIsNotActivatedException(),
-
+  new UserAlreadyGoogleLinkedException()
 ]);

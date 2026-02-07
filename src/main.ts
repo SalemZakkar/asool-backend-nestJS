@@ -12,4 +12,4 @@ async function bootstrap() {
     .get('/api/errors', createErrorRequestHandler());
   await app.listen(process.env.PORT ?? 4000);
 }
-bootstrap();
+bootstrap().then(() => console.log('STARTED'));

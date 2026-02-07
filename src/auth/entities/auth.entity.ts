@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { AuthProviderTypeEnum } from './enum/authprovider.type.enum';
+import { AuthProviderType } from './enum/auth-provider.type';
 import { User } from '../../user/entities/user.entity';
 
 @Entity()
@@ -27,7 +27,7 @@ export class AuthProvider {
   googleAccount: string;
   @Column({ nullable: true })
   passwordHash: string;
-  @Column({ type: 'enum', enum: Object.values(AuthProviderTypeEnum) })
+  @Column({ type: 'enum', enum: Object.values(AuthProviderType) })
   type: string;
 
   @ManyToOne(() => User, (user) => user.id, {

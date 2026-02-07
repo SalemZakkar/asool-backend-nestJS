@@ -8,12 +8,13 @@ import {
   UserAlreadyVerifiedException,
   UserActionNeedsPassword,
   UserIsNotActivatedException,
+  UserAlreadyGoogleLinkedException,
 } from './errors';
 import { AuthProvider } from '../auth/entities/auth.entity';
-import { AuthProviderTypeEnum } from '../auth/entities/enum/authprovider.type.enum';
+import { AuthProviderType } from '../auth/entities/enum/auth-provider.type';
 import { OtpService } from '../otp/otp.service';
 import { OtpChannelEnum } from '../otp/entity/enum/otpchannel.enum';
-import { UpdateMineDto } from './dto/update-mine.dto';
+import { UserUpdateMineDto } from './dto/user-update-mine.dto';
 import { Otp } from '../otp/entity/otp.entity';
 import { OtpReasonEnum } from '../otp/entity/enum/otpreason.enum';
 import { FirebaseService } from '../firebase_app/firebase.service';
@@ -46,14 +47,14 @@ export class UserService {
         userCreated.isEmailVerified = true;
         await authRepo.save({
           user: { id: userCreated.id },
-          type: AuthProviderTypeEnum.google,
+          type: AuthProviderType.google,
           googleAccount: credentials.googleId,
         });
       } else {
         let password = await hashPassword(credentials.password!, 10);
         await authRepo.save({
           user: { id: userCreated.id },
-          type: AuthProviderTypeEnum.password,
+          type: AuthProviderType.password,
           passwordHash: password,
         });
       }
@@ -73,7 +74,7 @@ export class UserService {
     return this.repo.findOne({ where: params });
   }
 
-  async findOneAndUpdate(params: Partial<User> | UpdateMineDto, id: string) {
+  async findOneAndUpdate(params: Partial<User> | UserUpdateMineDto, id: string) {
     let user = await this.repo.findOneBy({ id: id });
     if (!user) {
       throw new NotFoundException();
@@ -86,14 +87,14 @@ export class UserService {
     await this.ds.transaction(async (manager) => {
       const authRepo = manager.getRepository(AuthProvider);
       let auth = await authRepo.findOne({
-        where: { user: { id: id }, type: AuthProviderTypeEnum.password },
+        where: { user: { id: id }, type: AuthProviderType.password },
       });
       if (auth) {
         auth.passwordHash = await hashPassword(password, 10); // use your comparePassword/ hash function
       } else {
         auth = authRepo.create({
           user: { id: id },
-          type: AuthProviderTypeEnum.password,
+          type: AuthProviderType.password,
           passwordHash: await hashPassword(password, 10),
         });
       }
@@ -103,21 +104,20 @@ export class UserService {
 
   async linkGoogleAccount(userId: string, token: string) {
     await this.ds.transaction(async (manager) => {
-      let google = await this.firebase.verify(token);
-      let googleAccount = google.uid;
       const authRepo = manager.getRepository(AuthProvider);
       let auth = await authRepo.findOne({
-        where: { user: { id: userId }, type: AuthProviderTypeEnum.google },
+        where: { user: { id: userId }, type: AuthProviderType.google },
       });
       if (auth) {
-        auth.googleAccount = googleAccount;
-      } else {
-        auth = authRepo.create({
-          user: { id: userId },
-          type: AuthProviderTypeEnum.google,
-          googleAccount: googleAccount,
-        });
+        throw new UserAlreadyGoogleLinkedException();
       }
+      let google = await this.firebase.verify(token);
+      let googleAccount = google.uid;
+      auth = authRepo.create({
+        user: { id: userId },
+        type: AuthProviderType.google,
+        googleAccount: googleAccount,
+      });
       await authRepo.save(auth);
     });
   }
@@ -126,14 +126,14 @@ export class UserService {
     await this.ds.transaction(async (manager) => {
       const authRepo = manager.getRepository(AuthProvider);
       const passwordAuth = await authRepo.findOne({
-        where: { user: { id: userId }, type: AuthProviderTypeEnum.password },
+        where: { user: { id: userId }, type: AuthProviderType.password },
       });
       if (!passwordAuth) {
         throw new UserActionNeedsPassword();
       }
       await authRepo.delete({
         user: { id: userId },
-        type: AuthProviderTypeEnum.google,
+        type: AuthProviderType.google,
       });
     });
   }
@@ -180,7 +180,7 @@ export class UserService {
       await manager.getRepository(AuthProvider).update(
         {
           user: { id: otp!.user!.id },
-          type: AuthProviderTypeEnum.password,
+          type: AuthProviderType.password,
         },
         { passwordHash: await hashPassword(password, 10) },
       );

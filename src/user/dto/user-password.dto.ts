@@ -19,3 +19,14 @@ export class UserForgotPasswordDto {
   @IsEmail()
   email: string;
 }
+
+export class UserChangePasswordDto {
+  @IsString()
+  @MinLength(8)
+  @MaxLength(32)
+  password: string;
+  @IsString()
+  @MinLength(8)
+  @MaxLength(32)
+  confirmPassword: string;
+}

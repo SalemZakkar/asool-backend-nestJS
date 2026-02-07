@@ -2,7 +2,7 @@ import {
   IsString,
 } from 'class-validator';
 
-export class FirebaseLoginDto {
+export class AuthTokenDto {
   @IsString()
   token: string;
 }

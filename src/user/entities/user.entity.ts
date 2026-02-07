@@ -8,9 +8,9 @@ import {
   RelationId,
 } from 'typeorm';
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { UserRoleEnum } from './user.role.enum';
+import { UserRoleType } from './user-role.type';
 import { AuthProvider } from '../../auth/entities/auth.entity';
-import { AuthProviderTypeEnum } from '../../auth/entities/enum/authprovider.type.enum';
+import { AuthProviderType } from '../../auth/entities/enum/auth-provider.type';
 @Index(['email'], { unique: true, where: `"email" IS NOT NULL` })
 @Index(['username'], { unique: true, where: `"username" IS NOT NULL` })
 @Index(['phone'], {
@@ -32,7 +32,7 @@ export class User {
   username: string;
   @Column({ nullable: true })
   phone?: string;
-  @Column({ type: 'enum', enum: Object.values(UserRoleEnum) })
+  @Column({ type: 'enum', enum: Object.values(UserRoleType) })
   type: string;
   @Column({
     type: 'boolean',
@@ -48,7 +48,7 @@ export class User {
 
   get hasPassword(): boolean {
     return (
-      this.authProviders.filter((e) => e.type == AuthProviderTypeEnum.password)
+      this.authProviders.filter((e) => e.type == AuthProviderType.password)
         .length > 0
     );
   };

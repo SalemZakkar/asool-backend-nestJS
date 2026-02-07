@@ -1,17 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { SignUpDto } from './dto/sign-up.dto';
-import { UserRoleEnum } from '../user/entities/user.role.enum';
-import { SignInDto } from './dto/sign-in.dto';
+import { AuthSignUpDto } from './dto/auth-sign-up.dto';
+import { UserRoleType } from '../user/entities/user-role.type';
+import { AuthSignInDto } from './dto/auth-sign-in.dto';
 import {
   AuthInvalidTokenException,
   AuthRefreshTokenExpiredException,
+  AuthTokenExpiredException,
   AuthWrongCredentialsException,
 } from './errors';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthProvider } from './entities/auth.entity';
 import { Repository } from 'typeorm';
-import { AuthProviderTypeEnum } from './entities/enum/authprovider.type.enum';
+import { AuthProviderType } from './entities/enum/auth-provider.type';
 import {
   comparePassword,
   signToken,
@@ -29,33 +30,23 @@ export class AuthService {
     @Inject() private readonly firebase: FirebaseService,
   ) {}
 
-  async signUp(data: SignUpDto) {
+  async signUp(data: AuthSignUpDto) {
     if (data.password != data.confirmPassword) {
       throw new PasswordMissmatchException();
     }
     let res = await this.userService.create(
       {
-        type: UserRoleEnum.User,
+        type: UserRoleType.User,
         name: data.name,
         email: data.email,
         phone: data.phone,
       },
       { password: data.password },
     );
-    let jwt = signToken({
-      params: { id: res!.id, name: res!.name },
-      expires: '5d',
-      key: process.env.JWT!,
-    });
-    let refresh = signToken({
-      params: { id: res!.id, name: res!.name },
-      expires: '30d',
-      key: process.env.JWT!,
-    });
-    return { data: res, accessToken: jwt, refreshToken: refresh };
+    return { data: res, ...this.token(res) };
   }
 
-  async signIn(data: SignInDto) {
+  async signIn(data: AuthSignInDto) {
     let res = await this.userService.findOne({
       email: data.email,
       username: data.username,
@@ -64,7 +55,7 @@ export class AuthService {
       throw new AuthWrongCredentialsException();
     }
     let cred = await this.authProvider.findOne({
-      where: { user: { id: res.id }, type: AuthProviderTypeEnum.password },
+      where: { user: { id: res.id }, type: AuthProviderType.password },
     });
     if (!cred) {
       throw new AuthWrongCredentialsException();
@@ -72,13 +63,13 @@ export class AuthService {
     if (!(await comparePassword(cred.passwordHash!, data.password))) {
       throw new AuthWrongCredentialsException();
     }
-    let jwt = this.token({ id: res.id, name: res.name });
+    let jwt = this.token(res);
 
     return { ...jwt, data: res };
   }
 
   async refreshToken(refreshToken: string) {
-    let res = decodeToken(refreshToken, process.env.JWT!);
+    let res = decodeToken(refreshToken, process.env.JWTR!);
     if (res.isWrong) {
       throw new AuthInvalidTokenException();
     }
@@ -90,28 +81,14 @@ export class AuthService {
     if (!user) {
       throw new AuthInvalidTokenException();
     }
-    let jwt = this.token({ id: user!.id, name: user!.name });
+    let jwt = this.token(user);
     return { ...jwt, data: user };
   }
-
-  token = (params: any) => {
-    let jwt = signToken({
-      params: params,
-      expires: '5d',
-      key: process.env.JWT!,
-    });
-    let refresh = signToken({
-      params: params,
-      expires: '30d',
-      key: process.env.JWT!,
-    });
-    return { accessToken: jwt, refreshToken: refresh };
-  };
 
   async firebaseLogin(token: string) {
     const decoded = await this.firebase.verify(token);
 
-    const providerType = AuthProviderTypeEnum.google;
+    const providerType = AuthProviderType.google;
 
     const existingProvider = await this.authProvider.findOne({
       where: {
@@ -128,14 +105,35 @@ export class AuthService {
     }
     const user = await this.userService.create(
       {
-        type: UserRoleEnum.User,
+        type: UserRoleType.User,
         name: decoded.name ?? 'User',
         email: decoded.email,
       },
-      {googleId: decoded.uid}, // no password for firebase users
+      { googleId: decoded.uid }, // no password for firebase users
     );
-    console.log(user);
-    const jwt = this.token({ id: user!.id, name: user!.name });
+    const jwt = this.token(user);
     return { ...jwt, data: user };
+  }
+
+  token = (params: any) => {
+    let jwt = signToken({
+      params: { id: params.id, email: params.email },
+      expires: '2d',
+      key: process.env.JWT!,
+    });
+    let refresh = signToken({
+      params: { id: params.id, email: params.email },
+      expires: '30d',
+      key: process.env.JWTR!,
+    });
+    return { accessToken: jwt, refreshToken: refresh };
+  };
+
+  async validate(payload: any) {
+    let user = await this.userService.findOne({ id: payload.id });
+    if (!user) {
+      throw new AuthInvalidTokenException();
+    }
+    return user;
   }
 }
