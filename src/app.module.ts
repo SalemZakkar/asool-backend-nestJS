@@ -5,9 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { OtpModule } from './otp/otp.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { FirebaseModule } from 'nestjs-firebase';
-import path from 'node:path';
 import { FirebaseAppModule } from './firebase_app/firebase-app.module';
+import { FileModule } from './file/file.module';
+// import { AppController } from './app.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -32,6 +32,7 @@ import { FirebaseAppModule } from './firebase_app/firebase-app.module';
     UserModule,
     AuthModule,
     OtpModule,
+    FileModule,
   ],
   providers: [
     {
@@ -39,5 +40,11 @@ import { FirebaseAppModule } from './firebase_app/firebase-app.module';
       useClass: ClassSerializerInterceptor,
     },
   ],
+  // controllers: [
+  //   AppController
+  // ]
 })
-export class AppModule {}
+export class AppModule {
+
+}
+

@@ -18,6 +18,8 @@ import { UserUpdateMineDto } from './dto/user-update-mine.dto';
 import { Otp } from '../otp/entity/otp.entity';
 import { OtpReasonEnum } from '../otp/entity/enum/otpreason.enum';
 import { FirebaseService } from '../firebase_app/firebase.service';
+import { File } from '../file/entity/file.entity';
+import { FileService } from '../file/file.service';
 
 @Injectable()
 export class UserService {
@@ -25,6 +27,7 @@ export class UserService {
     @InjectRepository(User) private readonly repo: Repository<User>,
     @Inject() private readonly otpService: OtpService,
     @Inject() private readonly firebase: FirebaseService,
+    @Inject() private readonly fileService: FileService,
     private readonly ds: DataSource,
   ) {}
 
@@ -62,7 +65,7 @@ export class UserService {
     });
   }
 
-  async find(params?: Partial<User>) {
+  async find(params?: Omit<Partial<User>, 'image'>) {
     return this.repo.find({
       where: {
         name: new FindOperator('equal', 'likij'),
@@ -70,11 +73,14 @@ export class UserService {
     });
   }
 
-  async findOne(params: Partial<User>) {
+  async findOne(params: Omit<Partial<User>, 'image'>) {
     return this.repo.findOne({ where: params });
   }
 
-  async findOneAndUpdate(params: Partial<User> | UserUpdateMineDto, id: string) {
+  async findOneAndUpdate(
+    params: Partial<User> | UserUpdateMineDto,
+    id: string,
+  ) {
     let user = await this.repo.findOneBy({ id: id });
     if (!user) {
       throw new NotFoundException();
@@ -200,6 +206,48 @@ export class UserService {
       let user = await this.findOne({ id: otp!.user!.id });
       user!.isEmailVerified = true;
       await manager.getRepository(User).save(user!);
+      return user;
+    });
+  }
+
+  async savePhoto(file: Express.Multer.File, id: string) {
+    return await this.ds.transaction(async (entityManager) => {
+      let user = await this.findOne({ id: id });
+      let userRepo = entityManager.getRepository(User);
+      let fileRepo = entityManager.getRepository(File);
+      if (!user) {
+        throw new NotFoundException();
+      }
+      if (user.image) {
+        let nFile = await this.fileService.replace(
+          user.image!,
+          file,
+          'user',
+          fileRepo,
+        );
+        user.image = nFile.id;
+        return await userRepo.save(user);
+      } else {
+        let f = await this.fileService.store(file, 'user');
+        user.image = f.id;
+        return await userRepo.save(user);
+      }
+    });
+  }
+
+  async deletePhoto(id: string) {
+    return await this.ds.transaction(async (entityManager) => {
+      let user = await this.findOne({ id: id });
+      let userRepo = entityManager.getRepository(User);
+      let fileRepo = entityManager.getRepository(File);
+      if (!user) {
+        throw new NotFoundException();
+      }
+      if (user.image) {
+        await this.fileService.delete(user.image, fileRepo);
+        user.image = null;
+        return await userRepo.save(user);
+      }
       return user;
     });
   }

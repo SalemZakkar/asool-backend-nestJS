@@ -11,6 +11,8 @@ import {
   Query,
   Param,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserCreateDto } from './dto/user-create.dto';
@@ -26,6 +28,8 @@ import { UserVerifyDto } from './dto/user-verify.dto';
 import { UserUpdateDto, UserUpdateMineDto } from './dto/user-update-mine.dto';
 import { AuthTokenDto } from '../auth';
 import { JwtGuard } from '../auth';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileSizeValidationPipe, ImageFileValidatorPipeline } from '../file';
 
 @Controller('user')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -52,6 +56,27 @@ export class UserController {
       (req.user as User).id,
     );
     return new BaseResponse({ data: res });
+  }
+
+  @Post('/mine/image')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(FileInterceptor('image'))
+  async photo(
+    @UploadedFile(new ImageFileValidatorPipeline())
+    image: Express.Multer.File,
+    @Req() req: Request,
+  ) {
+    return new BaseResponse({
+      data: await this.userService.savePhoto(image, (req.user as User).id),
+    });
+  }
+
+  @Delete('/mine/image')
+  @UseGuards(JwtGuard)
+  async deletePhoto(@Req() req: Request) {
+    return new BaseResponse({
+      data: await this.userService.deletePhoto((req.user as User).id),
+    });
   }
 
   @Post('/mine/changePassword')

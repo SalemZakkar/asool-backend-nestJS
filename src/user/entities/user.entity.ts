@@ -35,6 +35,12 @@ export class User {
   @Column({ type: 'enum', enum: Object.values(UserRoleType) })
   type: string;
   @Column({
+    type: String,
+    unique: true,
+    nullable: true,
+  })
+  image!: string | null;
+  @Column({
     type: 'boolean',
     default: false,
   })
@@ -51,5 +57,5 @@ export class User {
       this.authProviders.filter((e) => e.type == AuthProviderType.password)
         .length > 0
     );
-  };
+  }
 }

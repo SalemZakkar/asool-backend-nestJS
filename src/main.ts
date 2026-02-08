@@ -10,6 +10,6 @@ async function bootstrap() {
     .getHttpAdapter()
     .getInstance()
     .get('/api/errors', createErrorRequestHandler());
-  await app.listen(process.env.PORT ?? 4000);
+  await app.listen(process.env.PORT!);
 }
 bootstrap().then(() => console.log('STARTED'));

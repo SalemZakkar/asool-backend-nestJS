@@ -23,7 +23,7 @@ export class OtpService {
       },
     });
     if (current) {
-      if (current.canResend()) {
+      if (current.canResend) {
         if (current.attempts >= Otp.MAX_ATTEMPTS) {
           current.attempts = 1;
         } else {
@@ -35,10 +35,10 @@ export class OtpService {
         return {
           sent: true,
           vid: current.id,
-          nextAttempt: current.nextDate().toISOString(),
+          nextAttempt: current.nextDate.toISOString(),
         };
       } else {
-        return { sent: false, nextAttempt: current.nextDate().toISOString() };
+        return { sent: false, nextAttempt: current.nextDate.toISOString() };
       }
     } else {
       let code = '123456';
@@ -52,7 +52,7 @@ export class OtpService {
       return {
         sent: true,
         vid: res.id,
-        nextAttempt: res.nextDate().toISOString(),
+        nextAttempt: res.nextDate.toISOString(),
       };
     }
   }
